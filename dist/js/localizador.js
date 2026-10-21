@@ -1,9 +1,12 @@
 // Localizador regional via OpenStreetMap (Nominatim para geocodificação, Overpass para estabelecimentos).
 const Localizador = (() => {
   const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
-  const OVERPASS = 'https://overpass-api.de/api/interpreter';
+  // Principal primeiro; os demais só são usados se o anterior falhar ou demorar (CA-LOC-13).
+  const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
+  const TEMPO_LIMITE_MS = 20000;
   const MAX_RESULTADOS = 4;
-  const RAIO_MAX_KM = 10;
+  const RAIOS_KM = [1, 2];
+  const RAIO_PADRAO_KM = 2;
   const TTL_CACHE = 24 * 60 * 60 * 1000;
   const MAX_CACHE = 30;
   const TIPOS = {
@@ -75,7 +78,37 @@ const Localizador = (() => {
     return [rua, t['addr:suburb'], t['addr:city']].filter(Boolean).join(' · ');
   }
 
-  async function buscarEstabelecimentos(lat, lon, raioKm) {
+  function raioInicial(salvo) {
+    const r = Number(salvo);
+    return RAIOS_KM.includes(r) ? r : RAIO_PADRAO_KM;
+  }
+
+  // Tenta cada servidor em ordem; erro HTTP ou tempo esgotado passa para o próximo.
+  async function consultarOverpass(consulta, aoTrocarServidor) {
+    let ultimoErro;
+    for (const [i, url] of OVERPASS.entries()) {
+      if (i > 0) aoTrocarServidor?.();
+      const controle = new AbortController();
+      const timer = setTimeout(() => controle.abort(), TEMPO_LIMITE_MS);
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'data=' + encodeURIComponent(consulta),
+          signal: controle.signal,
+        });
+        if (!resp.ok) throw new Error(`Serviço de mapas respondeu ${resp.status}.`);
+        return await resp.json();
+      } catch (erro) {
+        ultimoErro = erro.name === 'AbortError' ? new Error('O serviço de mapas demorou demais para responder.') : erro;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    throw ultimoErro;
+  }
+
+  async function buscarEstabelecimentos(lat, lon, raioKm, aoTrocarServidor) {
     const chave = `est:${lat.toFixed(3)},${lon.toFixed(3)},${raioKm}`;
     const emCache = lerCache(chave);
     if (emCache) return emCache;
@@ -84,13 +117,7 @@ const Localizador = (() => {
       `[out:json][timeout:25];` +
       `nwr["shop"~"^(${Object.keys(TIPOS).join('|')})$"](around:${raioKm * 1000},${lat},${lon});` +
       `out center tags;`;
-    const resp = await fetch(OVERPASS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'data=' + encodeURIComponent(consulta),
-    });
-    if (!resp.ok) throw new Error(`Serviço de mapas respondeu ${resp.status}.`);
-    const { elements = [] } = await resp.json();
+    const { elements = [] } = await consultarOverpass(consulta, aoTrocarServidor);
     const resultados = selecionarResultados(elements, lat, lon, raioKm);
     gravarCache(chave, resultados);
     return resultados;
@@ -153,12 +180,14 @@ const Localizador = (() => {
 
   async function pesquisarCoordenadas(lat, lon, raioKm, rotulo) {
     status(`Buscando estabelecimentos perto de ${rotulo}…`);
-    const resultados = await buscarEstabelecimentos(lat, lon, raioKm);
+    const resultados = await buscarEstabelecimentos(lat, lon, raioKm, () =>
+      status('O servidor de mapas não respondeu. Tentando outro servidor…')
+    );
     renderResultados(resultados);
     status(
       resultados.length
         ? `${resultados.length} estabelecimento(s) em até ${raioKm} km de ${rotulo}.`
-        : `Nenhum estabelecimento mapeado em até ${raioKm} km. Tente aumentar o raio.`
+        : `Nenhum estabelecimento mapeado em até ${raioKm} km.${raioKm < RAIO_PADRAO_KM ? ' Tente aumentar o raio.' : ''}`
     );
   }
 
@@ -178,14 +207,14 @@ const Localizador = (() => {
   }
 
   function raioSelecionado() {
-    return Math.min(RAIO_MAX_KM, Math.max(1, Number(document.getElementById('busca-raio').value) || 5));
+    return raioInicial(document.getElementById('busca-raio').value);
   }
 
   function iniciar() {
     const form = document.getElementById('form-busca');
     const prefs = Store.get('preferencias', {});
     if (prefs.termoBusca) form.termo.value = prefs.termoBusca;
-    if (prefs.raioBusca) form.raio.value = String(prefs.raioBusca);
+    form.raio.value = String(raioInicial(prefs.raioBusca));
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -240,6 +269,7 @@ const Localizador = (() => {
     distanciaTexto,
     termoValido,
     ehCep,
+    raioInicial,
     selecionarResultados,
     geocodificar,
     buscarEstabelecimentos,

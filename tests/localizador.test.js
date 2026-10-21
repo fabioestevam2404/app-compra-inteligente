@@ -94,6 +94,68 @@ test('CA-LOC-10 pesquisa repetida em até 24 h usa o cache; depois disso consult
   assert.equal(chamadas, 2);
 });
 
+const PRINCIPAL = 'overpass-api.de';
+const resposta = (elements) => ({ ok: true, json: async () => ({ elements }) });
+const UM_MERCADO = [el(1, 0.5, { shop: 'supermarket', name: 'Super' })];
+
+test('CA-LOC-13 principal responde com erro: usa o alternativo e avisa a troca', async () => {
+  const urls = [];
+  const fetch = async (url) => {
+    urls.push(url);
+    return url.includes(PRINCIPAL) ? { ok: false, status: 504 } : resposta(UM_MERCADO);
+  };
+  const { Localizador } = carregar({ fetch });
+  let trocas = 0;
+  const r = simples(await Localizador.buscarEstabelecimentos(ORIGEM.lat, ORIGEM.lon, 2, () => trocas++));
+  assert.equal(urls.length, 2);
+  assert.ok(urls[0].includes(PRINCIPAL));
+  assert.ok(!urls[1].includes(PRINCIPAL));
+  assert.equal(trocas, 1);
+  assert.equal(r[0].nome, 'Super');
+});
+
+test('CA-LOC-13 principal sem resposta em 20 s: cancela e usa o alternativo', async () => {
+  const timers = [];
+  const setTimeoutFalso = (fn, ms) => timers.push({ fn, ms });
+  const fetch = (url, { signal }) => {
+    if (!url.includes(PRINCIPAL)) return Promise.resolve(resposta(UM_MERCADO));
+    return new Promise((_, rejeitar) =>
+      signal.addEventListener('abort', () => rejeitar(Object.assign(new Error('aborted'), { name: 'AbortError' })))
+    );
+  };
+  const { Localizador } = carregar({ fetch, setTimeout: setTimeoutFalso });
+  const busca = Localizador.buscarEstabelecimentos(ORIGEM.lat, ORIGEM.lon, 2, () => {});
+  await new Promise((r) => setImmediate(r));
+  assert.equal(timers[0].ms, 20000);
+  timers[0].fn(); // esgota o tempo do principal
+  const r = simples(await busca);
+  assert.equal(r[0].nome, 'Super');
+});
+
+test('CA-LOC-13 todos os servidores falham: a busca falha (mensagem de CA-LOC-09)', async () => {
+  const { Localizador } = carregar({ fetch: async () => ({ ok: false, status: 504 }) });
+  await assert.rejects(Localizador.buscarEstabelecimentos(ORIGEM.lat, ORIGEM.lon, 2, () => {}), /504/);
+});
+
+test('CA-LOC-13 principal funcionando: não consulta o alternativo', async () => {
+  const urls = [];
+  const { Localizador } = carregar({ fetch: async (url) => (urls.push(url), resposta(UM_MERCADO)) });
+  let trocas = 0;
+  await Localizador.buscarEstabelecimentos(ORIGEM.lat, ORIGEM.lon, 1, () => trocas++);
+  assert.equal(urls.length, 1);
+  assert.equal(trocas, 0);
+});
+
+test('CA-LOC-14 raio padrão de 2 km; raio salvo fora de 1 e 2 km volta para 2', () => {
+  const { Localizador } = carregar();
+  assert.equal(Localizador.raioInicial(undefined), 2);
+  assert.equal(Localizador.raioInicial(1), 1);
+  assert.equal(Localizador.raioInicial('1'), 1);
+  assert.equal(Localizador.raioInicial(2), 2);
+  assert.equal(Localizador.raioInicial(5), 2);
+  assert.equal(Localizador.raioInicial(10), 2);
+});
+
 test('CA-LOC-10 geocodificação repetida usa o cache', async () => {
   let chamadas = 0;
   const fetch = async () => {

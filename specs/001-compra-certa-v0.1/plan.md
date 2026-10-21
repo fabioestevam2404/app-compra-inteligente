@@ -56,6 +56,8 @@ Cada módulo separa **regra** (função pura, exportada e testada) de **interfac
 | `Localizador` | `selecionarResultados(elementos, lat, lon, raioKm)` | CA-LOC-01, 05 |
 | `Localizador` | `distanciaTexto(km)` | CA-LOC-04 |
 | `Localizador` | `geocodificar`, `buscarEstabelecimentos` (com cache de 24 h) | CA-LOC-10 |
+| `Localizador` | `buscarEstabelecimentos(…, aoTrocarServidor)` → `consultarOverpass`: servidores em ordem, `AbortController` com 20 s por servidor | CA-LOC-13 |
+| `Localizador` | `raioInicial(salvo)`: aceita 1 ou 2 km, senão 2 km | CA-LOC-01, 14 |
 | `Conferencia` | `interpretarNota(texto)` | CA-CNF-04–06 |
 | `Conferencia` | `associar(descricao, itens)` | CA-CNF-07 |
 | `Conferencia` | `resultado(linhas, itens)` | CA-LST-10, CA-CNF-09, 14, 15 |
@@ -83,7 +85,10 @@ Cada módulo separa **regra** (função pura, exportada e testada) de **interfac
 | Serviço | Uso | Dados enviados |
 |---|---|---|
 | `nominatim.openstreetmap.org/search` | geocodificar o termo (`countrycodes=br`) | termo digitado |
-| `overpass-api.de/api/interpreter` | `shop=supermarket\|wholesale\|convenience\|greengrocer\|butcher\|bakery` no raio | coordenadas e raio |
+| `overpass-api.de/api/interpreter` (principal) | `shop=supermarket\|wholesale\|convenience\|greengrocer\|butcher\|bakery` no raio | coordenadas e raio |
+| `maps.mail.ru/osm/tools/overpass/api/interpreter` (alternativo, CA-LOC-13) | mesma consulta, usada só se o principal falhar ou passar de 20 s | coordenadas e raio |
+
+Os dois servidores respondem com `Access-Control-Allow-Origin: *`, verificado em 21/10/2026. A consulta usa `application/x-www-form-urlencoded`, que dispensa pré-verificação CORS.
 | `cdn.jsdelivr.net/npm/tesseract.js@5.1.1` + tessdata | mecanismo e modelo `por` do OCR | nenhum dado do usuário |
 
 ## 6. Estratégia de verificação
@@ -98,5 +103,5 @@ Cada módulo separa **regra** (função pura, exportada e testada) de **interfac
 |---|---|
 | OCR impreciso em fotos ruins | Revisão obrigatória e edição completa (CA-CNF-08); preenchimento manual (CA-CNF-10) |
 | Layouts de nota variados | Heurísticas isoladas em `interpretarNota`, cobertas por testes com notas de exemplo |
-| Instabilidade ou limite do Overpass/Nominatim | Cache de 24 h, busca só por ação do usuário, mensagem de erro com nova tentativa (CA-LOC-09) |
+| Instabilidade ou limite do Overpass/Nominatim | Raio máximo de 2 km (consultas leves), servidor alternativo automático (CA-LOC-13), cache de 24 h, busca só por ação do usuário, mensagem de erro com nova tentativa (CA-LOC-09). O Nominatim ainda não tem alternativo. |
 | Perda de dados ao limpar o navegador | Aceito na v0.1; exportação está no backlog |

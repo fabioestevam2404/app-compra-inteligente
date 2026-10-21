@@ -121,15 +121,16 @@ Para cada caso, anote **✅ Passou**, **❌ Falhou** ou **⚠️ Bloqueado** na 
 ### Bloco C — Localizador
 
 #### TM-04 · Pesquisa por texto 📱
-**Critérios:** CA-LOC-01, CA-LOC-04, CA-LOC-06, CA-LOC-11
+**Critérios:** CA-LOC-01, CA-LOC-04, CA-LOC-06, CA-LOC-11, CA-LOC-14
 
 | # | Passo | Resultado esperado |
 |---|---|---|
 | 1 | Abrir **Localizar estabelecimentos**. Ler o texto abaixo dos resultados. | Informa que a pesquisa envia o termo ou as coordenadas ao OpenStreetMap, traz o link "OpenStreetMap" e diz que os horários não confirmam funcionamento em tempo real. |
-| 2 | Digitar `Pinheiros, São Paulo`, raio **2 km**, e tocar em **Pesquisar**. | Status "Localizando a região…" e depois "Buscando estabelecimentos…". Os botões ficam desabilitados durante a busca. |
-| 3 | Aguardar o resultado. | De **1 a 4** cartões, ordenados do mais perto para o mais longe. Status: "N estabelecimento(s) em até 2 km de Pinheiros, São Paulo." |
-| 4 | Conferir cada cartão. | Nome (ou o tipo, se não houver nome), tipo e "aprox. X m" ou "aprox. X,X km" (sempre ≤ 2 km). Endereço ou "Endereço não informado no mapa." Horário, quando houver, como "Horário no mapa: …". |
-| 5 | Tocar em **Ver no mapa** num cartão. | O OpenStreetMap abre em outra aba, com o marcador no estabelecimento. |
+| 2 | Abrir o seletor **Raio**. | Só as opções **1 km** e **2 km**, com **2 km** já selecionado. |
+| 3 | Digitar `Pinheiros, São Paulo`, manter **2 km** e tocar em **Pesquisar**. | Status "Localizando a região…" e depois "Buscando estabelecimentos…". Os botões ficam desabilitados durante a busca. Se aparecer "Tentando outro servidor…", anote: é o servidor alternativo em ação (CA-LOC-13), não é falha. |
+| 4 | Aguardar o resultado (pode levar até cerca de 40 s se houver troca de servidor). | De **1 a 4** cartões, ordenados do mais perto para o mais longe. Status: "N estabelecimento(s) em até 2 km de Pinheiros, São Paulo." |
+| 5 | Conferir cada cartão. | Nome (ou o tipo, se não houver nome), tipo e "aprox. X m" ou "aprox. X,X km" (sempre ≤ 2 km). Endereço ou "Endereço não informado no mapa." Horário, quando houver, como "Horário no mapa: …". |
+| 6 | Tocar em **Ver no mapa** num cartão. | O OpenStreetMap abre em outra aba, com o marcador no estabelecimento. |
 
 **Falha se:** aparecer mais de 4 cartões, alguma distância passar do raio, a ordem estiver errada ou o link não abrir o local.
 
@@ -149,7 +150,8 @@ Para cada caso, anote **✅ Passou**, **❌ Falhou** ou **⚠️ Bloqueado** na 
 
 | # | Passo | Resultado esperado |
 |---|---|---|
-| 1 | Depois do TM-04, recarregar a página e abrir **Localizar**. | O campo traz `Pinheiros, São Paulo` e o raio está em **2 km**. |
+| 1 | Depois do TM-04, mudar o raio para **1 km** e pesquisar de novo. | Resultados em até 1 km. |
+| 2 | Recarregar a página e abrir **Localizar**. | O campo traz `Pinheiros, São Paulo` e o raio está em **1 km** (não no padrão de 2 km). |
 
 #### TM-07 · Localização do aparelho permitida 📱
 **Critérios:** CA-LOC-07
@@ -367,6 +369,7 @@ Para cada caso, anote **✅ Passou**, **❌ Falhou** ou **⚠️ Bloqueado** na 
 | CA-LOC-09 | TM-09 | | CA-GER-02 | TM-22, TM-23 |
 | CA-LOC-11 | TM-04 | | CA-GER-03 | TM-23 |
 | CA-LOC-12 | TM-06 | | CA-GER-04 | TM-24 |
+| CA-LOC-14 | TM-04 | | | |
 | CA-CNF-01 | TM-10 | | CA-GER-05 | TM-25 |
 | CA-CNF-02 | TM-11 | | CA-GER-06 | TM-26 |
 | CA-CNF-03 | TM-12 | | CA-GER-07 | TM-01 |

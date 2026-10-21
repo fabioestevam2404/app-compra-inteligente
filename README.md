@@ -8,7 +8,7 @@ Aplicação web responsiva para planejar compras de mercado, consultar a lista d
 
 - **Lista de compras:** montar a lista por categoria, incluir produtos (com sugestões do catálogo) e ajustar quantidades e unidades.
 - **Dashboard:** visualizar a categoria com maior gasto, a participação percentual das categorias no total cotado e os totais demonstrativos por mercado, com diferença percentual em relação à menor cesta.
-- **Localizador regional:** pesquisar até quatro estabelecimentos em um raio de até 10 km por cidade, bairro ou CEP; também é possível usar a localização do dispositivo após conceder permissão. Os resultados podem incluir distância aproximada, endereço e link para o mapa.
+- **Localizador regional:** pesquisar até quatro estabelecimentos em um raio de 1 ou 2 km por cidade, bairro ou CEP; também é possível usar a localização do dispositivo após conceder permissão. Os resultados podem incluir distância aproximada, endereço e link para o mapa. Se o servidor de mapas principal falhar ou demorar, o app tenta automaticamente um servidor alternativo.
 - **Conferência por nota fiscal:** fotografar ou selecionar uma imagem, executar OCR em português no navegador, revisar os dados lidos e associar linhas aos itens da lista. O app destaca itens identificados, itens que ficaram de fora e extras.
 - **Histórico de compras:** salvar localmente o mercado, a data, o total pago e o resultado da conferência da nota, com total e média das compras.
 - **Crédito:** Desenvolvido por Fabio Estevam.

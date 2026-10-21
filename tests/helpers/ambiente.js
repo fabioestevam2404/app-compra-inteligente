@@ -32,11 +32,12 @@ function criarArmazenamento(inicial = {}) {
 }
 
 // `semente` grava valores iniciais já com o prefixo do app: { lista: [] } -> "compracerta:lista".
-function carregar({ modulos = TODOS, armazenamento, semente = {}, fetch } = {}) {
+// `setTimeout` pode ser substituído para controlar tempos-limite nos testes.
+function carregar({ modulos = TODOS, armazenamento, semente = {}, fetch, setTimeout: st = setTimeout } = {}) {
   const localStorage = armazenamento || criarArmazenamento();
   for (const [chave, valor] of Object.entries(semente)) localStorage.setItem('compracerta:' + chave, JSON.stringify(valor));
 
-  const ctx = vm.createContext({ console, localStorage, fetch, URLSearchParams });
+  const ctx = vm.createContext({ console, localStorage, fetch, URLSearchParams, AbortController, setTimeout: st, clearTimeout });
   for (const m of modulos) {
     const codigo = fs.readFileSync(path.join(PASTA_JS, `${m}.js`), 'utf8');
     vm.runInContext(`${codigo}\n;globalThis.${GLOBAIS[m]} = ${GLOBAIS[m]};`, ctx, { filename: `${m}.js` });

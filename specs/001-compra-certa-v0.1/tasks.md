@@ -33,6 +33,15 @@ Legenda: ✅ concluída · ⏳ pendente
 | T110 | CI: rodar `npm test` antes de publicar no GitHub Pages | — | ✅ |
 | T111 | Executar o roteiro manual em celular e desktop e registrar o resultado | CAs manuais | ⏳ |
 
+## Fase 2 — Revisão 1 da spec (21/10/2026)
+
+| ID | Tarefa | CAs | Status |
+|---|---|---|---|
+| T201 | Testes de servidor alternativo, tempo-limite e raio padrão (falharam antes da implementação: 3 de 5) | CA-LOC-13, 14 | ✅ |
+| T202 | `consultarOverpass`: lista de servidores, `AbortController` com 20 s, aviso "Tentando outro servidor…" | CA-LOC-13 | ✅ |
+| T203 | Raio só de 1 e 2 km, padrão 2 km, preferência antiga (5 ou 10 km) volta para 2 | CA-LOC-01, 14 | ✅ |
+| T204 | Verificar CORS dos dois servidores Overpass | CA-LOC-13 | ✅ |
+
 ## Matriz de rastreabilidade
 
 **A** = teste automatizado (`tests/*.test.js`, teste com o mesmo ID) · **M** = [roteiro manual](../../tests/manual.md)
@@ -72,5 +81,7 @@ Legenda: ✅ concluída · ⏳ pendente
 | CA-LOC-10 | A | | | |
 | CA-LOC-11 | M | | | |
 | CA-LOC-12 | M | | | |
+| CA-LOC-13 | A | | | |
+| CA-LOC-14 | A + M | | | |
 
-**Cobertura:** 61 critérios. 37 com teste automatizado e 24 só com verificação manual. Todos têm pelo menos uma forma de verificação.
+**Cobertura:** 63 critérios. 39 com teste automatizado e 24 só com verificação manual. Todos têm pelo menos uma forma de verificação.

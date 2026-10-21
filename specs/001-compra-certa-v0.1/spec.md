@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Status | **Aprovada** (21/10/2026) |
+| Status | **Aprovada** (21/10/2026) · Revisão 1 aprovada (21/10/2026) |
 | Tipo | Spec retroativa (o código v0.1 já existe; esta spec passa a ser a referência) |
 | Autor | Fabio Estevam |
 | Criada em | 21/10/2026 |
@@ -81,7 +81,7 @@ Prioridade: **P1** é essencial para a v0.1 fazer sentido; **P2** agrega valor, 
 
 | ID | Critério de aceite |
 |---|---|
-| CA-LOC-01 | **Dado** um termo de cidade, bairro ou CEP com 3 caracteres ou mais e um raio de 1, 2, 5 ou 10 km, **quando** o usuário pesquisa, **então** são exibidos até 4 estabelecimentos dentro do raio. |
+| CA-LOC-01 | **Dado** um termo de cidade, bairro ou CEP com 3 caracteres ou mais e um raio de 1 ou 2 km *(Rev. 1)*, **quando** o usuário pesquisa, **então** são exibidos até 4 estabelecimentos dentro do raio. |
 | CA-LOC-02 | **Dado** um termo com menos de 3 caracteres, **quando** o usuário pesquisa, **então** aparece uma mensagem pedindo cidade, bairro ou CEP, e nenhuma consulta externa é feita. |
 | CA-LOC-03 | **Dado** um termo composto só por dígitos, espaços, ponto e hífen que somem 8 dígitos, **então** ele é tratado como CEP. |
 | CA-LOC-04 | **Dado** cada resultado, **então** são exibidos: nome (ou o tipo, se não houver nome), tipo, distância aproximada (em m abaixo de 1 km, em km acima), endereço quando houver, horário quando houver e link para o mapa. |
@@ -93,6 +93,8 @@ Prioridade: **P1** é essencial para a v0.1 fazer sentido; **P2** agrega valor, 
 | CA-LOC-10 | **Dado** a mesma pesquisa repetida em até 24 h, **então** o resultado vem do aparelho, sem nova consulta externa. |
 | CA-LOC-11 | **Dado** a tela do localizador, **então** ela informa que o termo ou as coordenadas são enviados ao OpenStreetMap e traz a atribuição dos dados. (P2 da constituição) |
 | CA-LOC-12 | **Dado** uma pesquisa feita, **quando** o usuário volta ao localizador em outra visita, **então** o último termo e o raio já estão preenchidos. |
+| CA-LOC-13 | **Dado** que o serviço de mapas principal responde com erro ou não responde em 20 s, **então** o app tenta automaticamente um serviço alternativo, e o status mostra "Tentando outro servidor…". A mensagem de erro de CA-LOC-09 só aparece se todos falharem. *(Rev. 1)* |
+| CA-LOC-14 | **Dado** o primeiro acesso, ou um raio salvo que não seja 1 nem 2 km (ex.: 5 km de uma versão anterior), **então** o raio pré-selecionado é 2 km. *(Rev. 1)* |
 
 ---
 
@@ -167,6 +169,12 @@ Toda divergência será resolvida no código (constituição, item 5).
 | DEF-02 | Defeito | Uma linha associada a um item removido da lista some do resumo, em vez de virar "Extra". | CA-CNF-14 |
 | DIV-01 | Mudança de produto | A lista começa com 11 itens de exemplo. | CA-LST-01 |
 | DIV-02 | Mudança de produto | O mercado é opcional ao salvar a conferência. | CA-CNF-11 |
+
+## 7.1 Histórico de revisões
+
+| Rev. | Data | Mudança | Motivo |
+|---|---|---|---|
+| 1 | 21/10/2026 | Raio limitado a 1 e 2 km (CA-LOC-01); novos CA-LOC-13 (servidor alternativo) e CA-LOC-14 (raio padrão de 2 km). | No teste em celular, o Overpass devolveu 504. Medição na mesma data, em Pinheiros (SP): de 15 a 27 s para 2 km; 5 e 10 km falharam ou passaram de 37 s, com respostas de até 546 KB. Cada servidor falhou num raio diferente. |
 
 ## 8. Métricas de sucesso (protótipo)
 
