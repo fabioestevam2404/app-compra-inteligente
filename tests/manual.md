@@ -15,7 +15,7 @@ Cobre os critérios de aceite que dependem de navegador, câmera, GPS, rede ou a
 | Item | Celular 📱 | Desktop 💻 |
 |---|---|---|
 | Navegador | Safari (iOS) ou Chrome (Android), versão atual | Chrome ou Edge, versão atual |
-| Endereço do app | **HTTPS**: GitHub Pages ou túnel (`cloudflared`) | `http://localhost:8000` |
+| Endereço do app | **HTTPS**: GitHub Pages ou túnel (`cloudflared`). **Nunca `localhost`** (ver nota abaixo) | `http://localhost:8000` |
 | Ferramentas | Câmera, GPS ligado | DevTools (F12) |
 
 Para subir o app no desktop:
@@ -24,7 +24,14 @@ Para subir o app no desktop:
 python -m http.server 8000 --directory dist
 ```
 
-> O GPS **só funciona** em HTTPS ou `localhost`. Abrir no celular por `http://IP-da-rede:8000` serve apenas para o caso TM-08.
+> **Por que o celular não abre `localhost`:** `localhost` sempre aponta para o próprio aparelho. No celular, ele procura um servidor dentro do celular, que não existe. O servidor roda no PC, então o celular precisa de um endereço que chegue até o PC:
+>
+> | Opção | Endereço no celular | GPS | Observação |
+> |---|---|---|---|
+> | GitHub Pages | `https://fabioestevam2404.github.io/app-compra-inteligente/` | ✅ | Recomendado: endereço fixo, não depende do PC ligado |
+> | Túnel | `https://<aleatorio>.trycloudflare.com`, gerado por `cloudflared tunnel --url http://localhost:8000` | ✅ | O endereço muda a cada execução e o túnel gratuito pode cair; se cair, gere outro |
+> | Wi-Fi local | `http://IP-do-PC:8000`, com o servidor iniciado com `--bind 0.0.0.0` | ❌ | Sem HTTPS o GPS é bloqueado; serve só para o TM-08 |
+> | Cabo USB (só Android) | `http://localhost:8000`, via `chrome://inspect` → Port forwarding no PC | ✅ | Única forma de usar `localhost` no celular; não existe no iPhone sem Mac |
 
 ### 1.2 Limpar o estado (fazer antes de começar e quando um caso pedir)
 
