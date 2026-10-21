@@ -2,10 +2,15 @@
 const Historico = (() => {
   const CHAVE = 'historico';
   let registros = Store.get(CHAVE, []);
+  const ouvintes = [];
 
   function salvar() {
     Store.set(CHAVE, registros);
-    render();
+    ouvintes.forEach((f) => f());
+  }
+
+  function todos() {
+    return registros.map((r) => ({ ...r }));
   }
 
   function adicionar(registro) {
@@ -18,8 +23,14 @@ const Historico = (() => {
     salvar();
   }
 
-  function ordenados() {
-    return registros.slice().sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.salvoEm.localeCompare(a.salvoEm));
+  // Mais recente primeiro pela data da compra; no mesmo dia, o salvo por último primeiro.
+  function ordenar(lista) {
+    return lista.slice().sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.salvoEm.localeCompare(a.salvoEm));
+  }
+
+  function resumo(lista) {
+    const total = lista.reduce((s, r) => s + (r.total || 0), 0);
+    return { quantidade: lista.length, total, media: lista.length ? total / lista.length : 0 };
   }
 
   function listaNomes(nomes) {
@@ -27,21 +38,21 @@ const Historico = (() => {
   }
 
   function render() {
-    const resumo = document.getElementById('hist-resumo');
+    const elResumo = document.getElementById('hist-resumo');
     const lista = document.getElementById('hist-lista');
     if (!registros.length) {
-      resumo.innerHTML = '';
+      elResumo.innerHTML = '';
       lista.innerHTML = '<p class="vazio">Nenhuma compra registrada. Use “Conferir compra” ao sair do mercado.</p>';
       return;
     }
 
-    const total = registros.reduce((s, r) => s + (r.total || 0), 0);
-    resumo.innerHTML = `
-      <div class="card"><span class="card-rotulo">Compras registradas</span><strong>${registros.length}</strong></div>
-      <div class="card"><span class="card-rotulo">Total pago</span><strong>${Util.brl(total)}</strong></div>
-      <div class="card"><span class="card-rotulo">Média por compra</span><strong>${Util.brl(total / registros.length)}</strong></div>`;
+    const r = resumo(registros);
+    elResumo.innerHTML = `
+      <div class="card"><span class="card-rotulo">Compras registradas</span><strong>${r.quantidade}</strong></div>
+      <div class="card"><span class="card-rotulo">Total pago</span><strong>${Util.brl(r.total)}</strong></div>
+      <div class="card"><span class="card-rotulo">Média por compra</span><strong>${Util.brl(r.media)}</strong></div>`;
 
-    lista.innerHTML = ordenados()
+    lista.innerHTML = ordenar(registros)
       .map((r) => {
         const c = r.conferencia || { identificados: [], faltantes: [], extras: [] };
         return `
@@ -77,8 +88,9 @@ const Historico = (() => {
       const id = e.target.closest('[data-remover]')?.dataset.remover;
       if (id && confirm('Excluir este registro do histórico?')) remover(id);
     });
+    ouvintes.push(render);
     render();
   }
 
-  return { iniciar, adicionar };
+  return { iniciar, adicionar, remover, todos, ordenar, resumo };
 })();

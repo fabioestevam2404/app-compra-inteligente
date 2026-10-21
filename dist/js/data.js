@@ -1,4 +1,4 @@
-// Catálogo, lista inicial e mercados de DEMONSTRAÇÃO.
+// Catálogo e mercados de DEMONSTRAÇÃO.
 // Nenhum preço aqui representa oferta real.
 const Dados = (() => {
   const CATEGORIAS = [
@@ -66,20 +66,6 @@ const Dados = (() => {
     'Outros': 10.0,
   };
 
-  const LISTA_INICIAL = [
-    ['Arroz branco 5 kg', 1],
-    ['Feijão carioca 1 kg', 2],
-    ['Café torrado 500 g', 1],
-    ['Leite integral 1 L', 6],
-    ['Ovos brancos', 1],
-    ['Peito de frango', 1.5],
-    ['Banana prata', 1],
-    ['Tomate', 1],
-    ['Pão francês', 0.5],
-    ['Detergente 500 ml', 2],
-    ['Papel higiênico 12 rolos', 1],
-  ];
-
   // Mercados fictícios do comparador demonstrativo.
   // `fator` desloca o nível geral de preços; cada produto ainda recebe uma variação própria.
   const MERCADOS_DEMO = [
@@ -99,13 +85,6 @@ const Dados = (() => {
     return PRECO_PADRAO_CATEGORIA[categoria] ?? PRECO_PADRAO_CATEGORIA.Outros;
   }
 
-  function listaInicial() {
-    return LISTA_INICIAL.map(([nome, quantidade]) => {
-      const p = buscarCatalogo(nome);
-      return { id: Util.uid(), nome: p.nome, categoria: p.categoria, quantidade, unidade: p.unidade, precoRef: p.preco };
-    });
-  }
-
   // Preço unitário demonstrativo de um item em um mercado fictício (variação de ±8%).
   function precoDemo(item, mercado) {
     const variacao = ((Util.hash(Util.normalizar(item.nome) + '|' + mercado.id) % 1000) / 1000) * 0.16 - 0.08;
@@ -119,7 +98,6 @@ const Dados = (() => {
     MERCADOS_DEMO,
     buscarCatalogo,
     precoPadrao,
-    listaInicial,
     precoDemo,
   };
 })();

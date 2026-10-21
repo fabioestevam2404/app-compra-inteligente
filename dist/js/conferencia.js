@@ -117,13 +117,28 @@ const Conferencia = (() => {
     return melhorNota >= 0.5 ? melhor.id : null;
   }
 
+  // Só itens com quantidade > 0 são conferidos. Linha sem item, ou ligada a um item
+  // que não está mais entre os conferíveis (ex.: removido da lista), conta como extra.
   function resultado(linhas, itens) {
-    const associados = new Set(linhas.map((l) => l.itemId).filter(Boolean));
+    const conferiveis = itens.filter((i) => i.quantidade > 0);
+    const ids = new Set(conferiveis.map((i) => i.id));
+    const associados = new Set(linhas.map((l) => l.itemId).filter((id) => ids.has(id)));
     return {
-      identificados: itens.filter((i) => associados.has(i.id)).map((i) => i.nome),
-      faltantes: itens.filter((i) => !associados.has(i.id)).map((i) => i.nome),
-      extras: linhas.filter((l) => !l.itemId && l.descricao.trim()).map((l) => ({ descricao: l.descricao.trim(), valor: l.valor || 0 })),
+      identificados: conferiveis.filter((i) => associados.has(i.id)).map((i) => i.nome),
+      faltantes: conferiveis.filter((i) => !associados.has(i.id)).map((i) => i.nome),
+      extras: linhas
+        .filter((l) => !ids.has(l.itemId) && l.descricao.trim())
+        .map((l) => ({ descricao: l.descricao.trim(), valor: l.valor || 0 })),
     };
+  }
+
+  // Devolve o primeiro problema na ordem do formulário, ou null se estiver tudo certo.
+  function validarRegistro({ mercado, data, total }) {
+    if (!String(mercado ?? '').trim()) return { campo: 'conf-mercado', mensagem: 'Informe o mercado.' };
+    if (!data) return { campo: 'conf-data', mensagem: 'Informe a data da compra.' };
+    const valor = Util.parseValor(total);
+    if (!Number.isFinite(valor) || valor < 0) return { campo: 'conf-total', mensagem: 'Informe o total pago (ex.: 154,90).' };
+    return null;
   }
 
   // ---- Interface ----
@@ -241,22 +256,17 @@ const Conferencia = (() => {
   }
 
   function salvar() {
-    const total = Util.parseValor($('conf-total').value);
-    const data = $('conf-data').value;
-    if (!Number.isFinite(total) || total < 0) {
-      status('Informe o total pago (ex.: 154,90).', true);
-      $('conf-total').focus();
-      return;
-    }
-    if (!data) {
-      status('Informe a data da compra.', true);
-      $('conf-data').focus();
+    const campos = { mercado: $('conf-mercado').value.trim(), data: $('conf-data').value, total: $('conf-total').value };
+    const problema = validarRegistro(campos);
+    if (problema) {
+      status(problema.mensagem, true);
+      $(problema.campo).focus();
       return;
     }
     Historico.adicionar({
-      mercado: $('conf-mercado').value.trim(),
-      data,
-      total: Util.arredondar(total),
+      mercado: campos.mercado,
+      data: campos.data,
+      total: Util.arredondar(Util.parseValor(campos.total)),
       conferencia: resultado(estado.linhas, itensDaLista()),
     });
     limpar();
@@ -314,8 +324,15 @@ const Conferencia = (() => {
       status('');
     });
 
-    Lista.aoMudar(() => estado && renderLinhas());
+    // Desfaz associações a itens que deixaram de ser conferíveis, para o seletor
+    // da linha mostrar "Extra", coerente com o resumo (CA-CNF-14).
+    Lista.aoMudar(() => {
+      if (!estado) return;
+      const ids = new Set(itensDaLista().map((i) => i.id));
+      for (const l of estado.linhas) if (l.itemId && !ids.has(l.itemId)) l.itemId = null;
+      renderLinhas();
+    });
   }
 
-  return { iniciar, interpretarNota, associar, resultado };
+  return { iniciar, interpretarNota, associar, resultado, validarRegistro };
 })();

@@ -2,7 +2,7 @@
 const Lista = (() => {
   const CHAVE = 'lista';
   const PASSO = { kg: 0.5, g: 100, ml: 100 };
-  let itens = Store.get(CHAVE, null) || Dados.listaInicial();
+  let itens = Store.get(CHAVE, []);
   const ouvintes = [];
 
   function salvar() {
@@ -22,21 +22,24 @@ const Lista = (() => {
     nome = nome.trim();
     if (!nome || !(quantidade > 0)) return null;
 
-    const existente = itens.find((i) => Util.normalizar(i.nome) === Util.normalizar(nome));
+    const doCatalogo = Dados.buscarCatalogo(nome);
+    const un = unidade || doCatalogo?.unidade || 'un';
+
+    // Soma só com mesmo nome e mesma unidade; unidade diferente vira outro item, sem conversão.
+    const existente = itens.find((i) => Util.normalizar(i.nome) === Util.normalizar(nome) && i.unidade === un);
     if (existente) {
       existente.quantidade = Util.arredondar(existente.quantidade + quantidade, 3);
       salvar();
       return existente;
     }
 
-    const doCatalogo = Dados.buscarCatalogo(nome);
     const cat = categoria || doCatalogo?.categoria || 'Outros';
     const item = {
       id: Util.uid(),
       nome: doCatalogo?.nome || nome,
       categoria: cat,
       quantidade: Util.arredondar(quantidade, 3),
-      unidade: unidade || doCatalogo?.unidade || 'un',
+      unidade: un,
       precoRef: doCatalogo ? doCatalogo.preco : Dados.precoPadrao(cat),
     };
     itens.push(item);
@@ -54,6 +57,27 @@ const Lista = (() => {
   function remover(id) {
     itens = itens.filter((i) => i.id !== id);
     salvar();
+  }
+
+  // Agrupa na ordem fixa das categorias; categoria desconhecida cai em "Outros".
+  function agrupar(lista) {
+    const grupos = {};
+    for (const i of lista) {
+      const cat = Dados.CATEGORIAS.includes(i.categoria) ? i.categoria : 'Outros';
+      (grupos[cat] ||= []).push(i);
+    }
+    return Dados.CATEGORIAS.filter((c) => grupos[c]).map((c) => [c, grupos[c]]);
+  }
+
+  function proximaQuantidade(item, acao) {
+    const passo = PASSO[item.unidade] || 1;
+    const nova = acao === 'mais' ? item.quantidade + passo : Math.max(0, item.quantidade - passo);
+    return Util.arredondar(nova, 3);
+  }
+
+  function normalizarQuantidade(valor) {
+    const q = Number(valor);
+    return Number.isFinite(q) && q >= 0 ? Util.arredondar(q, 3) : 0;
   }
 
   // ---- Interface ----
@@ -82,17 +106,12 @@ const Lista = (() => {
       el.innerHTML = '<p class="vazio">Sua lista está vazia. Adicione o primeiro item acima.</p>';
       return;
     }
-    const grupos = {};
-    for (const i of itens) {
-      const cat = Dados.CATEGORIAS.includes(i.categoria) ? i.categoria : 'Outros';
-      (grupos[cat] ||= []).push(i);
-    }
-    el.innerHTML = Dados.CATEGORIAS.filter((c) => grupos[c])
+    el.innerHTML = agrupar(itens)
       .map(
-        (c) => `
+        ([c, grupo]) => `
         <section class="cartao grupo">
-          <h3>${Util.esc(c)} <span class="contagem">${grupos[c].length}</span></h3>
-          <ul class="itens">${grupos[c].map(linhaItem).join('')}</ul>
+          <h3>${Util.esc(c)} <span class="contagem">${grupo.length}</span></h3>
+          <ul class="itens">${grupo.map(linhaItem).join('')}</ul>
         </section>`
       )
       .join('');
@@ -134,9 +153,7 @@ const Lista = (() => {
         remover(id);
         return;
       }
-      const passo = PASSO[item.unidade] || 1;
-      const nova = acao === 'mais' ? item.quantidade + passo : Math.max(0, item.quantidade - passo);
-      atualizar(id, { quantidade: Util.arredondar(nova, 3) });
+      atualizar(id, { quantidade: proximaQuantidade(item, acao) });
       lista.querySelector(`[data-id="${CSS.escape(id)}"] [data-acao="${acao}"]`)?.focus();
     });
 
@@ -144,8 +161,7 @@ const Lista = (() => {
       const li = e.target.closest('.item');
       if (!li) return;
       if (e.target.classList.contains('item-qtd')) {
-        const q = Number(e.target.value);
-        atualizar(li.dataset.id, { quantidade: Number.isFinite(q) && q >= 0 ? Util.arredondar(q, 3) : 0 });
+        atualizar(li.dataset.id, { quantidade: normalizarQuantidade(e.target.value) });
       } else if (e.target.classList.contains('item-unidade')) {
         atualizar(li.dataset.id, { unidade: e.target.value });
       }
@@ -155,5 +171,5 @@ const Lista = (() => {
     render();
   }
 
-  return { iniciar, todos, aoMudar };
+  return { iniciar, todos, aoMudar, adicionar, atualizar, remover, agrupar, proximaQuantidade, normalizarQuantidade };
 })();

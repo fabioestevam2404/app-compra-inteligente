@@ -1,9 +1,10 @@
-# Publica a pasta dist/ no GitHub Pages a cada push na main.
-name: Deploy GitHub Pages
+# Roda os testes dos critérios de aceite e, se passarem, publica dist/ no GitHub Pages.
+name: Testes e deploy
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -16,7 +17,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+
   deploy:
+    needs: testes
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

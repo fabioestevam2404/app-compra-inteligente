@@ -43,14 +43,23 @@ const Localizador = (() => {
     return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
+  function termoValido(termo) {
+    return String(termo ?? '').trim().length >= 3;
+  }
+
+  // Só dígitos, espaços, ponto e hífen, somando 8 dígitos.
+  function ehCep(termo) {
+    const t = String(termo ?? '').trim();
+    return /^[\d\s.-]+$/.test(t) && /^\d{8}$/.test(t.replace(/\D/g, ''));
+  }
+
   async function geocodificar(termo) {
     const chave = 'geo:' + Util.normalizar(termo);
     const emCache = lerCache(chave);
     if (emCache) return emCache;
 
     const digitos = termo.replace(/\D/g, '');
-    const ehCep = /^\d{8}$/.test(digitos) && /^[\d\s.-]+$/.test(termo.trim());
-    const q = ehCep ? `${digitos.slice(0, 5)}-${digitos.slice(5)}, Brasil` : termo;
+    const q = ehCep(termo) ? `${digitos.slice(0, 5)}-${digitos.slice(5)}, Brasil` : termo;
     const params = new URLSearchParams({ q, format: 'jsonv2', limit: '1', countrycodes: 'br', 'accept-language': 'pt-BR' });
     const resp = await fetch(`${NOMINATIM}?${params}`);
     if (!resp.ok) throw new Error(`Serviço de geocodificação respondeu ${resp.status}.`);
@@ -82,9 +91,14 @@ const Localizador = (() => {
     });
     if (!resp.ok) throw new Error(`Serviço de mapas respondeu ${resp.status}.`);
     const { elements = [] } = await resp.json();
+    const resultados = selecionarResultados(elements, lat, lon, raioKm);
+    gravarCache(chave, resultados);
+    return resultados;
+  }
 
+  function selecionarResultados(elements, lat, lon, raioKm) {
     const prioridade = Object.keys(TIPOS);
-    const resultados = elements
+    return elements
       .map((el) => {
         const la = el.lat ?? el.center?.lat;
         const lo = el.lon ?? el.center?.lon;
@@ -107,9 +121,6 @@ const Localizador = (() => {
       .sort((a, b) => !a.nome - !b.nome || (a.ordemTipo > 1) - (b.ordemTipo > 1) || a.distanciaKm - b.distanciaKm)
       .slice(0, MAX_RESULTADOS)
       .sort((a, b) => a.distanciaKm - b.distanciaKm);
-
-    gravarCache(chave, resultados);
-    return resultados;
   }
 
   // ---- Interface ----
@@ -179,7 +190,7 @@ const Localizador = (() => {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const termo = form.termo.value.trim();
-      if (termo.length < 3) {
+      if (!termoValido(termo)) {
         status('Informe uma cidade, bairro ou CEP.', true);
         return;
       }
@@ -223,5 +234,14 @@ const Localizador = (() => {
     });
   }
 
-  return { iniciar, distanciaKm };
+  return {
+    iniciar,
+    distanciaKm,
+    distanciaTexto,
+    termoValido,
+    ehCep,
+    selecionarResultados,
+    geocodificar,
+    buscarEstabelecimentos,
+  };
 })();
