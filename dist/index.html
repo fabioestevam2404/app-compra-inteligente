@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Planeje compras de mercado, compare uma cesta e confira o valor pago pela nota fiscal.">
+  <meta name="theme-color" content="#1f7a4d">
+  <title>Compra Certa — Mercado Inteligente</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <h1>Compra Certa</h1>
+      <p>Mercado Inteligente</p>
+    </div>
+  </header>
+
+  <nav class="abas" role="tablist" aria-label="Seções do app">
+    <button type="button" role="tab" id="tab-lista" data-aba="lista" aria-controls="aba-lista">Lista</button>
+    <button type="button" role="tab" id="tab-dashboard" data-aba="dashboard" aria-controls="aba-dashboard">Dashboard</button>
+    <button type="button" role="tab" id="tab-mercados" data-aba="mercados" aria-controls="aba-mercados">Localizar estabelecimentos</button>
+    <button type="button" role="tab" id="tab-conferir" data-aba="conferir" aria-controls="aba-conferir">Conferir compra</button>
+    <button type="button" role="tab" id="tab-historico" data-aba="historico" aria-controls="aba-historico">Histórico</button>
+  </nav>
+
+  <main>
+    <!-- Lista de compras -->
+    <section id="aba-lista" class="aba" role="tabpanel" aria-labelledby="tab-lista" hidden>
+      <h2>Lista de compras</h2>
+      <form id="form-item" class="cartao form-item" autocomplete="off">
+        <label class="campo campo-largo">
+          <span>Produto</span>
+          <input id="item-nome" name="nome" list="catalogo-produtos" required maxlength="80" placeholder="Ex.: Arroz branco 5 kg">
+        </label>
+        <label class="campo">
+          <span>Categoria</span>
+          <select id="item-categoria" name="categoria"><option value="">Automática</option></select>
+        </label>
+        <label class="campo campo-curto">
+          <span>Quantidade</span>
+          <input id="item-quantidade" name="quantidade" type="number" min="0.001" step="any" value="1" required>
+        </label>
+        <label class="campo campo-curto">
+          <span>Unidade</span>
+          <select id="item-unidade" name="unidade"><option value="">Automática</option></select>
+        </label>
+        <button type="submit" class="btn btn-primario">Adicionar</button>
+      </form>
+      <datalist id="catalogo-produtos"></datalist>
+      <div id="lista-itens"></div>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="aba-dashboard" class="aba" role="tabpanel" aria-labelledby="tab-dashboard" hidden>
+      <h2>Dashboard</h2>
+      <p class="aviso">Os preços e mercados deste comparador são <strong>ilustrativos</strong> e não representam ofertas reais.</p>
+      <div id="dash-resumo" class="cards"></div>
+      <div class="grade-2">
+        <section class="cartao">
+          <h3>Participação por categoria</h3>
+          <div id="dash-categorias"></div>
+        </section>
+        <section class="cartao">
+          <h3>Comparação da cesta (demonstração)</h3>
+          <div id="dash-mercados"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- Localizador -->
+    <section id="aba-mercados" class="aba" role="tabpanel" aria-labelledby="tab-mercados" hidden>
+      <h2>Localizar estabelecimentos</h2>
+      <form id="form-busca" class="cartao form-busca">
+        <label class="campo campo-largo">
+          <span>Cidade, bairro ou CEP</span>
+          <input id="busca-termo" name="termo" maxlength="120" placeholder="Ex.: Pinheiros, São Paulo ou 01310-100">
+        </label>
+        <label class="campo campo-curto">
+          <span>Raio</span>
+          <select id="busca-raio" name="raio">
+            <option value="1">1 km</option>
+            <option value="2">2 km</option>
+            <option value="5" selected>5 km</option>
+            <option value="10">10 km</option>
+          </select>
+        </label>
+        <button type="submit" class="btn btn-primario">Pesquisar</button>
+        <button type="button" id="busca-gps" class="btn">Usar minha localização</button>
+      </form>
+      <p id="busca-status" class="status" role="status" aria-live="polite"></p>
+      <ul id="busca-resultados" class="resultados"></ul>
+      <p class="nota">
+        A pesquisa envia o termo ou as coordenadas autorizadas ao OpenStreetMap (Nominatim e Overpass).
+        Dados de mapa © colaboradores do <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.
+        Horários exibidos não confirmam funcionamento em tempo real.
+      </p>
+    </section>
+
+    <!-- Conferência por nota fiscal -->
+    <section id="aba-conferir" class="aba" role="tabpanel" aria-labelledby="tab-conferir" hidden>
+      <h2>Conferir compra</h2>
+      <div class="cartao">
+        <p>Fotografe ou selecione a imagem da nota. A leitura (OCR) é feita no seu navegador e a foto não é armazenada.</p>
+        <div class="acoes">
+          <label class="btn btn-primario">
+            Fotografar nota
+            <input id="conf-camera" type="file" accept="image/*" capture="environment" class="oculto">
+          </label>
+          <label class="btn">
+            Selecionar imagem
+            <input id="conf-arquivo" type="file" accept="image/*" class="oculto">
+          </label>
+          <button type="button" id="conf-manual" class="btn btn-link">Preencher manualmente</button>
+        </div>
+        <img id="conf-preview" class="preview" alt="Pré-visualização da nota fiscal" hidden>
+        <progress id="conf-progresso" max="1" value="0" hidden></progress>
+        <p id="conf-status" class="status" role="status" aria-live="polite"></p>
+      </div>
+
+      <div id="conf-revisao" class="cartao" hidden>
+        <h3>Revise os dados lidos</h3>
+        <p class="nota">O OCR pode errar descrições e valores. Confira cada campo antes de salvar.</p>
+        <div class="grade-form">
+          <label class="campo"><span>Mercado</span><input id="conf-mercado" maxlength="80"></label>
+          <label class="campo"><span>Data</span><input id="conf-data" type="date" required></label>
+          <label class="campo"><span>Total pago (R$)</span><input id="conf-total" inputmode="decimal" placeholder="0,00"></label>
+        </div>
+        <div class="tabela-rolagem">
+          <table class="tabela">
+            <thead>
+              <tr><th>Descrição na nota</th><th>Valor (R$)</th><th>Item da lista</th><th><span class="sr">Ações</span></th></tr>
+            </thead>
+            <tbody id="conf-linhas"></tbody>
+          </table>
+        </div>
+        <button type="button" id="conf-add-linha" class="btn">Adicionar linha</button>
+        <div id="conf-resumo" class="conf-resumo"></div>
+        <div class="acoes">
+          <button type="button" id="conf-salvar" class="btn btn-primario">Salvar compra</button>
+          <button type="button" id="conf-descartar" class="btn">Descartar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Histórico -->
+    <section id="aba-historico" class="aba" role="tabpanel" aria-labelledby="tab-historico" hidden>
+      <h2>Histórico de compras</h2>
+      <div id="hist-resumo" class="cards"></div>
+      <div id="hist-lista"></div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <p>Desenvolvido por Fabio Estevam · Protótipo: preços do comparador são ilustrativos.</p>
+  </footer>
+
+  <script src="js/util.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/lista.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/localizador.js"></script>
+  <script src="js/historico.js"></script>
+  <script src="js/conferencia.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
